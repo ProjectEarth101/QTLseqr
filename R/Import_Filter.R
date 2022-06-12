@@ -271,15 +271,29 @@ importFromTable <-
     }
 
 
-## not exported still only works for GATK...
+
+#' @title importFromVCF
+#' @param file vcf file
+#' @param highBulk Highbulk name
+#' @param lowBulk LowBulk name
+#' @param chromList chromosome list
+#' @param filter Boolean Value True or False. TRUE if you want to filter by "PASS", FALSE you want no filter
+#' @param filename Provide prefix to file name always ends in .CSV
+#' @return Returns a data frame
+#' @export importFromVCF
+
 importFromVCF <- function(file,
                           highBulk = character(),
                           lowBulk = character(),
                           chromList = NULL) {
     
     vcf <- vcfR::read.vcfR(file = file)
-    message("Keeping SNPs that pass all filters")
-    vcf <- vcf[vcf@fix[, "FILTER"] == "PASS"] 
+   message("Keeping SNPs that pass all filters Either PASS or No Filter")
+   if (filter == TRUE){
+   vcf <- vcf[vcf@fix[, "FILTER"] == "PASS"]
+   } else if (filter == FALSE) {
+   vcf <- vcf
+   }
     
     fix <- dplyr::as_tibble(vcf@fix[, c("CHROM", "POS", "REF", "ALT")]) %>% mutate(Key = seq(1:nrow(.)))
     
@@ -331,6 +345,8 @@ importFromVCF <- function(file,
         message("Removing the following chromosomes: ", paste(unique(SNPset$CHROM)[!unique(SNPset$CHROM) %in% chromList], collapse = ", "))
         SNPset <- SNPset[SNPset$CHROM %in% chromList, ]
     }
+    
+    write.table(SNPset, file = paste0(filename,".csv"), row.names = FALSE, col.names = TRUE, sep = ",")
     as.data.frame(SNPset)
 }
 
